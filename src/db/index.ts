@@ -1,7 +1,8 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import * as schema from "./schema/auth-schema.ts";
+import * as authSchema from "./schema/auth-schema.ts";
+import * as appSchema from "./schema/app-schema.ts";
 
 const poolConnection = mysql.createPool({
   host: process.env.DATABASE_HOST ?? "localhost",
@@ -13,7 +14,7 @@ const poolConnection = mysql.createPool({
 
 export const db = drizzle({
   client: poolConnection,
-  schema,
+  schema: { ...authSchema, ...appSchema },
   mode: "default",
   logger: process.env.NODE_ENV === "development",
 });

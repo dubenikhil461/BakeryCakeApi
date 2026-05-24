@@ -19,6 +19,11 @@ export const user = mysqlTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  // better-auth admin plugin columns
+  role: varchar("role", { length: 50 }).default("user"),
+  banned: boolean("banned").default(false),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires", { fsp: 3 }),
 });
 
 export const session = mysqlTable(
