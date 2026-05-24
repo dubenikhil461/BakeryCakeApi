@@ -27,7 +27,8 @@ export async function getWishlist(userId: string) {
     })
     .from(wishlist)
     .innerJoin(cake, eq(cake.id, wishlist.cakeId))
-    .where(eq(wishlist.userId, userId))
+    // Only return active cakes — deleted (cascade) or deactivated cakes are excluded
+    .where(and(eq(wishlist.userId, userId), eq(cake.isActive, true)))
     .orderBy(desc(wishlist.createdAt));
 
   // Fetch primary images for all wishlist cakes in one query

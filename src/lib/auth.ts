@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { db } from "../db/index.ts";
-import { emailOTP, admin } from "better-auth/plugins";
+import { emailOTP } from "better-auth/plugins";
 import * as authSchema from "../db/schema/auth-schema.ts";
 import { sendOtpEmail, sendWelcomeMessage } from "./email";
 
@@ -21,17 +21,13 @@ export const auth = betterAuth({
     plugins: [
         emailOTP({
             allowedAttempts: 5,
-            expiresIn: 60 * 5, // 5 minutes
+            expiresIn: 60 * 5, // 5minutes
             async sendVerificationOTP({ email, otp, type }) {
                 if(type === "sign-in"){
                     sendOtpEmail({ email, otp, type });
                 }
             },
-        }),
-        admin({
-            defaultRole: "user",
-            adminRoles: ["admin"],
-        }),
+        }), 
     ],
     hooks: {
         after: createAuthMiddleware(async (ctx) => {
