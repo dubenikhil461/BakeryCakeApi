@@ -352,9 +352,10 @@ export const order = mysqlTable(
     paymentTransactionId: varchar("payment_transaction_id", { length: 255 }),
 
     // FK kept for reference; full snapshot stored in shippingSnapshot JSON
-    shippingAddressId: varchar("shipping_address_id", {
-      length: 36,
-    }).references(() => address.id, { onDelete: "set null" }),
+    shippingAddressId: varchar("shipping_address_id", { length: 36 }).references(
+      () => address.id,
+      { onDelete: "set null" },
+    ),
     // full address JSON captured at order time — survives address deletion
     shippingSnapshot: json("shipping_snapshot"),
 
@@ -463,9 +464,7 @@ export const review = mysqlTable(
     rating: tinyint("rating").notNull(), // 1–5
     title: varchar("title", { length: 200 }),
     body: text("body"),
-    isVerifiedPurchase: boolean("is_verified_purchase")
-      .default(false)
-      .notNull(),
+    isVerifiedPurchase: boolean("is_verified_purchase").default(false).notNull(),
     // admin must approve before showing publicly
     isApproved: boolean("is_approved").default(false).notNull(),
     adminReply: text("admin_reply"),
