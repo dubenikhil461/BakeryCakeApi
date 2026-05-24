@@ -4,6 +4,7 @@ import { cakesPublic } from "./cakes.routes.ts";
 import { categoriesPublic } from "./categories.routes.ts";
 import { addresses } from "./addresses.routes.ts";
 import { cartRoutes } from "./cart.routes.ts";
+import { ordersPublic } from "./orders.routes.ts";
 
 const publicRouter = new Hono<{ Variables: HonoVariables }>();
 
@@ -14,7 +15,8 @@ publicRouter.route("/categories", categoriesPublic);
 // Customer (requireAuth applied inside each router)
 publicRouter.route("/addresses", addresses);
 publicRouter.route("/cart", cartRoutes);
+publicRouter.route("/orders", ordersPublic);
 
-// Phases 6–7 will add: orders, reviews, wishlist
+// Phase 7 will add: reviews, wishlist
 
 export { publicRouter };
