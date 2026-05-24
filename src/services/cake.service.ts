@@ -185,6 +185,48 @@ export async function softDeleteCake(id: string) {
   await db.update(cake).set({ isActive: false }).where(eq(cake.id, id));
 }
 
+/**
+ * Hard delete — permanently removes the cake and all related data.
+ * Cloudinary images are deleted first, then the DB row is removed.
+ * DB cascades handle: cake_image, cake_variant, cake_tag, review, wishlist, cart_item.
+ * order_item.cake_id is set to NULL (order history is preserved).
+ */
+export async function hardDeleteCake(id: string) {
+  const [existing] = await db
+    .select({ id: cake.id })
+    .from(cake)
+    .where(eq(cake.id, id))
+    .limit(1);
+
+  if (!existing) {
+    throw Object.assign(new Error("Cake not found"), { statusCode: 404 });
+  }
+
+  // 1. Fetch all image storage keys before deleting rows
+  const images = await db
+    .select({ storageKey: cakeImage.storageKey })
+    .from(cakeImage)
+    .where(eq(cakeImage.cakeId, id));
+
+  // 2. Delete each image from Cloudinary (ignore individual failures)
+  await Promise.allSettled(
+    images.map((img) => cloudinary.uploader.destroy(img.storageKey)),
+  );
+
+  // 3. Clean up upload tracking records linked to this cake
+  await db
+    .delete(upload)
+    .where(
+      and(
+        eq(upload.linkedEntityType, "cake"),
+        eq(upload.linkedEntityId, id),
+      ),
+    );
+
+  // 4. Delete the cake row — DB cascades remove everything else
+  await db.delete(cake).where(eq(cake.id, id));
+}
+
 export async function getCakeById(id: string) {
   const [row] = await db.select().from(cake).where(eq(cake.id, id)).limit(1);
   return row ?? null;

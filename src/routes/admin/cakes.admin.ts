@@ -10,7 +10,7 @@ import { parsePagination, paginate } from "../../lib/pagination.ts";
 import {
   createCake,
   updateCake,
-  softDeleteCake,
+  hardDeleteCake,
   attachImageToCake,
   detachImageFromCake,
   setPrimaryImage,
@@ -28,10 +28,16 @@ const createCakeSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
   shortDescription: z.string().max(500).optional(),
-  categoryId: z.string().uuid().optional(),
-  basePrice: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, "Must be a valid decimal e.g. '450.00'"),
+  // Accept empty string from the UI (no category selected) and treat it as absent
+  categoryId: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().uuid().optional(),
+  ),
+  // Accept both numeric (JSON default) and string representations
+  basePrice: z.union([
+    z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a valid decimal e.g. '450.00'"),
+    z.number().positive("Price must be positive").transform((n) => n.toFixed(2)),
+  ]),
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),
   isBestseller: z.boolean().optional(),
@@ -53,8 +59,10 @@ const variantSchema = z.object({
   variantType: z.enum(["size", "weight", "flavor", "tier"]),
   name: z.string().min(1).max(100),
   priceModifier: z
-    .string()
-    .regex(/^-?\d+(\.\d{1,2})?$/)
+    .union([
+      z.string().regex(/^-?\d+(\.\d{1,2})?$/, "Must be a valid decimal e.g. '50.00' or '-25.50'"),
+      z.number().transform((n) => n.toFixed(2)),
+    ])
     .optional(),
   stockQty: z.number().int().min(0).optional(),
   sku: z.string().max(100).optional(),
@@ -188,14 +196,15 @@ cakes.put("/:id", validateBody(updateCakeSchema), async (c) => {
 });
 
 // ─── DELETE /api/admin/cakes/:id ──────────────────────────────────────────────
-// Soft delete — sets isActive = false.
+// Hard delete — permanently removes cake, images (Cloudinary + DB), variants,
+// tags, reviews, and wishlist entries. Order items are nulled out (history kept).
 
 cakes.delete("/:id", async (c) => {
   const id = c.req.param("id");
 
   try {
-    await softDeleteCake(id);
-    return c.json({ success: true, message: "Cake deactivated" });
+    await hardDeleteCake(id);
+    return c.json({ success: true, message: "Cake permanently deleted" });
   } catch (err: unknown) {
     const e = err as { message?: string; statusCode?: number };
     return c.json(
