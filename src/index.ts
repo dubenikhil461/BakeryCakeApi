@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { auth } from "./lib/auth.ts";
 import type { HonoVariables } from "./types/hono.ts";
 import { adminRouter } from "./routes/admin/index.ts";
+import { publicRouter } from "./routes/public/index.ts";
 import packageJson from "../package.json";
 
 const app = new Hono<{ Variables: HonoVariables }>();
@@ -31,10 +32,11 @@ app.get("/health", (c) =>
   c.json({ status: "ok", version: packageJson.version }),
 );
 
-// ─── Admin Routes (Phase 3+) ──────────────────────────────────────────────────
+// ─── Admin Routes ─────────────────────────────────────────────────────────────
 app.route("/api/admin", adminRouter);
 
-// Phase 4+: public routes  → app.route("/api", publicRouter)
+// ─── Public Routes ────────────────────────────────────────────────────────────
+app.route("/api", publicRouter);
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.onError((err, c) => {
